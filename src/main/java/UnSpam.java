@@ -1,5 +1,4 @@
 import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
@@ -61,7 +60,7 @@ public class UnSpam {
                         .setDataStoreFactory(dataStoreFactory)
                         .setAccessType("offline")
                         .build();
-        Credential credential = new AuthorizationCodeInstalledApp(
+        Credential credential = new CustomAuthorizationCodeInstalledApp(
                 flow, new LocalServerReceiver()).authorize("user");
         System.out.println(
                 "Credentials saved to " + dataStoreDir.getAbsolutePath());
@@ -81,7 +80,7 @@ public class UnSpam {
 
         unSpamList = readLines(DATA_PATH + "unspam_list.txt");
         for (String email : unSpamList) {
-            System.out.println(email);
+//            System.out.println(email);
             queryString = queryString + "from:" + email + " OR ";
         }
         queryString = queryString.substring(0, queryString.length() - 4);
@@ -102,6 +101,10 @@ public class UnSpam {
             String user = "me";
 
             List<Message> messageList = listSpamEmailMatchingQuery(service, "me", queryString);
+            if(messageList.isEmpty()) {
+                System.out.println("Not found email match query: " + queryString);
+                continue;
+            }
             for (Message message : messageList) {
                 System.out.println(message.getId());
                 modifyMessage(service, "me", message.getId(), Arrays.asList("INBOX"), Arrays.asList("SPAM"));
@@ -117,8 +120,8 @@ public class UnSpam {
         ModifyMessageRequest mods = new ModifyMessageRequest().setAddLabelIds(labelsToAdd).setRemoveLabelIds(labelsToRemove);
         Message message = service.users().messages().modify(userId, messageId, mods).execute();
 
-        System.out.println("Message id: " + message.getId());
-        System.out.println(message.toPrettyString());
+//        System.out.println("Message id: " + message.getId());
+//        System.out.println(message.toPrettyString());
     }
 
     public static String[] readLines(String filePath) throws IOException {
